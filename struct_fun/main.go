@@ -1,13 +1,22 @@
 package main
 
-import "fmt"
-
 type Child struct {
 	name string
 	age  int
 }
 
+func (c *Child) setName(name string) {
+	c.name = name
+}
+
+func (c Child) getName() string {
+	return c.name
+}
+
 func main() {
-	firstChild := &Child{name: "Shervil", age: 27}
-	fmt.Printf("%s:%v", firstChild.name, firstChild.age)
+	c := &Child{}
+	c.setName("Alice")
+	println(c.name)
+
+	c.getName()
 }
