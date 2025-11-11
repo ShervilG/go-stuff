@@ -10,23 +10,32 @@ import (
 
 var wg *sync.WaitGroup
 
-func parseInfoLog(line string, file *os.File) {
-	file.WriteString(line + "\n")
+func parseInfoLog(line chan string, file *os.File) {
+	for line := range line {
+		file.WriteString(line + "\n")
+	}
 	wg.Done()
 }
 
-func parseWarnLog(line string, file *os.File) {
-	file.WriteString(line + "\n")
+func parseWarnLog(line chan string, file *os.File) {
+	for line := range line {
+		file.WriteString(line + "\n")
+	}
 	wg.Done()
 }
 
-func parseErrorLog(line string, file *os.File) {
-	file.WriteString(line + "\n")
+func parseErrorLog(line chan string, file *os.File) {
+	for line := range line {
+		file.WriteString(line + "\n")
+	}
 	wg.Done()
 }
 
 func main() {
 	wg = &sync.WaitGroup{}
+	infoLineChan := make(chan string, 1)
+	warnLineChan := make(chan string, 1)
+	errorLineChan := make(chan string, 1)
 
 	infoFile, err := os.OpenFile("info.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
@@ -46,6 +55,11 @@ func main() {
 	}
 	defer errorFile.Close()
 
+	wg.Add(3)
+	go parseInfoLog(infoLineChan, infoFile)
+	go parseWarnLog(warnLineChan, warnFile)
+	go parseErrorLog(errorLineChan, errorFile)
+
 	readFile, err := os.OpenFile("/home/shervil/Documents/repos/go-stuff/log_parser/sample_app.log", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
@@ -57,18 +71,19 @@ func main() {
 	for e == nil {
 		if len(s) >= 5 {
 			if strings.Contains(s, "INFO") {
-				wg.Add(1)
-				go parseInfoLog(s, infoFile)
+				infoLineChan <- s
 			} else if strings.Contains(s, "WARN") {
-				wg.Add(1)
-				go parseWarnLog(s, warnFile)
+				warnLineChan <- s
 			} else if strings.Contains(s, "ERROR") {
-				wg.Add(1)
-				go parseErrorLog(s, errorFile)
+				errorLineChan <- s
 			}
 		}
 		s, e = buffReader.ReadString('\n')
 	}
+
+	close(infoLineChan)
+	close(warnLineChan)
+	close(errorLineChan)
 
 	wg.Wait()
 	fmt.Println("Log parsing completed.")
