@@ -6,27 +6,28 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 var wg *sync.WaitGroup
 
 func parseInfoLog(line chan string, file *os.File) {
 	for line := range line {
-		file.WriteString(line + "\n")
+		file.WriteString(line)
 	}
 	wg.Done()
 }
 
 func parseWarnLog(line chan string, file *os.File) {
 	for line := range line {
-		file.WriteString(line + "\n")
+		file.WriteString(line)
 	}
 	wg.Done()
 }
 
 func parseErrorLog(line chan string, file *os.File) {
 	for line := range line {
-		file.WriteString(line + "\n")
+		file.WriteString(line)
 	}
 	wg.Done()
 }
@@ -36,6 +37,8 @@ func main() {
 	infoLineChan := make(chan string, 1)
 	warnLineChan := make(chan string, 1)
 	errorLineChan := make(chan string, 1)
+
+	t := time.Now().Second()
 
 	infoFile, err := os.OpenFile("info.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
@@ -86,5 +89,5 @@ func main() {
 	close(errorLineChan)
 
 	wg.Wait()
-	fmt.Println("Log parsing completed.")
+	fmt.Println("Log parsing completed. Time taken:", time.Now().Second()-t)
 }
