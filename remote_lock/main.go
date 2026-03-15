@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-redis/redis"
 )
 
-var counter int
+var counter int32
 
 func main() {
 	counter = 0
@@ -25,7 +26,7 @@ func main() {
 
 			res := redisClient.SetNX("lock", "1", 5*time.Second)
 			if res.Err() == nil && res.Val() {
-				counter += 1
+				atomic.AddInt32(&counter, 1)
 			} else {
 				return
 			}
@@ -33,5 +34,5 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println("Counter:", counter)
+	fmt.Println("Counter:", atomic.LoadInt32(&counter))
 }
